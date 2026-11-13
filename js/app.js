@@ -4,6 +4,8 @@ import { Timer } from './timer.js';
 import { unlock, beep, chime, say } from './sound.js';
 import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 import { store } from './store.js';
+import { entries, saveMine, deleteMine } from './library.js';
+import { openEditor, initEditor } from './editor.js';
 
 const $ = (sel) => document.querySelector(sel);
 const el = {
@@ -29,12 +31,15 @@ const el = {
 	notice: $('#notice'),
 	refetch: $('#refetch'),
 	sound: $('#opt-sound'),
+	current: $('#wk-current'),
+	edit: $('#wk-edit'),
 	voice: $('#opt-voice'),
 };
 
 let currentJson = '';
 let fetchedAt = null;
-let workouts = [];
+let presets = [];
+let items = [];
 let timer = null;
 let phases = [];
 let total = 0;
@@ -62,7 +67,7 @@ function renderSegments() {
 
 function render(t) {
 	const p = t.phase;
-	const w = workouts[current];
+	const w = items[current].workout;
 	const state = t.state === 'idle' ? 'idle' : t.state === 'done' ? 'done' : p.type;
 	if (el.body.dataset.state !== state) {
 		el.body.dataset.state = state;
@@ -127,12 +132,13 @@ function onPhase(p, audible) {
 function loadWorkout(index) {
 	timer?.stopLoop();
 	releaseWakeLock();
-	const i = workouts[index] ? index : 0;
+	const i = items[index] ? index : 0;
+	const w = items[i].workout;
 	current = i;
-	store.set('workoutName', workouts[i].name);
+	store.set('workoutKey', items[i].key);
 	el.select.value = String(i);
-	el.title.textContent = workouts[i].name;
-	phases = buildPhases(workouts[i]);
+	el.title.textContent = w.name;
+	phases = buildPhases(w);
 	total = totalSeconds(phases);
 	renderSegments();
 	timer = new Timer(phases, {
@@ -151,13 +157,35 @@ function loadWorkout(index) {
 	});
 }
 
-function setWorkouts(list) {
-	workouts = list;
+/**
+ * プリセットとマイワークアウトから一覧を作り直す。
+ * 選択はキー（プリセットは名前、マイワークアウトは id）で保つ。
+ *
+ * @param {string|null} selectKey 指定があればそれを選ぶ
+ */
+function refreshList(selectKey = null) {
+	items = entries(presets);
 	el.select.innerHTML = '';
-	list.forEach((w, i) => el.select.append(new Option(`${w.name}（${fmt(totalSeconds(buildPhases(w)))}）`, String(i))));
-	// 定義が変わっても同じワークアウトを選び続けられるよう、名前で復元する。
-	const name = store.get('workoutName', null);
-	loadWorkout(Math.max(0, list.findIndex((w) => w.name === name)));
+	const groups = { preset: 'プリセット', mine: 'マイワークアウト' };
+	Object.entries(groups).forEach(([source, label]) => {
+		const group = document.createElement('optgroup');
+		group.label = label;
+		items.forEach((item, i) => {
+			if (item.source === source) {
+				group.append(new Option(`${item.workout.name}（${fmt(totalSeconds(buildPhases(item.workout)))}）`, String(i)));
+			}
+		});
+		if (group.children.length) {
+			el.select.append(group);
+		}
+	});
+	const key = selectKey || store.get('workoutKey', null);
+	loadWorkout(Math.max(0, items.findIndex((item) => item.key === key)));
+}
+
+function setPresets(list) {
+	presets = list;
+	refreshList();
 }
 
 /* ---------- workouts.json の取得と反映 ---------- */
@@ -199,7 +227,7 @@ function apply({ text, list }) {
 	el.source.textContent = text;
 	el.toggle.disabled = false;
 	el.reset.disabled = false;
-	setWorkouts(list);
+	setPresets(list);
 	return true;
 }
 
@@ -247,15 +275,73 @@ function openSettings() {
 	if (fetchedAt) {
 		showStatus(`最終読み込み：${clock(fetchedAt)}`);
 	}
+	const item = items[current];
+	const kind = item.source === 'preset' ? 'プリセット' : 'マイワークアウト';
+	el.current.textContent = `${item.workout.name}（${kind}）`;
+	el.edit.textContent = item.source === 'preset' ? '複製して編集' : '編集';
 	el.dialog.showModal();
+}
+
+/* ---------- ワークアウトの作成・編集 ---------- */
+
+function editCurrent() {
+	const item = items[current];
+	el.dialog.close();
+	if (item.source === 'preset') {
+		openEditor({
+			workout: { ...item.workout, name: `${item.workout.name}（コピー）` },
+			title: 'プリセットを複製',
+			deletable: false,
+			onSave: (raw) => afterSave(saveMine(raw)),
+		});
+		return;
+	}
+	openEditor({
+		workout: item.workout,
+		title: 'ワークアウトを編集',
+		deletable: true,
+		onSave: (raw) => afterSave(saveMine(raw, item.id)),
+		onDelete: () => {
+			if (!deleteMine(item.id)) {
+				return false;
+			}
+			refreshList(items[0].key);
+			return true;
+		},
+	});
+}
+
+function createNew() {
+	el.dialog.close();
+	openEditor({
+		workout: null,
+		title: '新しいワークアウト',
+		deletable: false,
+		onSave: (raw) => afterSave(saveMine(raw)),
+	});
+}
+
+/** 保存できたら一覧を作り直してそれを選ぶ。できなければ false（フォームは開いたまま）。 */
+function afterSave(id) {
+	if (!id) {
+		return false;
+	}
+	refreshList(`c:${id}`);
+	return true;
 }
 
 /* ---------- 初期化 ---------- */
 
 async function init() {
-	// 旧版のアプリ内編集データは使わない（workouts.json が正）。
+	// 旧版の保存データを整理する。
 	store.remove('customJson');
 	store.remove('workout');
+	const legacyName = store.get('workoutName', null);
+	if (legacyName) {
+		store.set('workoutKey', `p:${legacyName}`);
+		store.remove('workoutName');
+	}
+	initEditor();
 
 	el.sound.checked = store.get('sound', true);
 	el.voice.checked = store.get('voice', true);
@@ -274,11 +360,13 @@ async function init() {
 	});
 	el.select.addEventListener('change', () => loadWorkout(Number(el.select.value)));
 	el.refetch.addEventListener('click', refetch);
+	el.edit.addEventListener('click', editCurrent);
+	$('#wk-new').addEventListener('click', createNew);
 	$('#open-settings').addEventListener('click', openSettings);
 	$('#settings-close').addEventListener('click', () => el.dialog.close());
 	document.addEventListener('visibilitychange', refreshOnReturn);
 	document.addEventListener('keydown', (e) => {
-		if (e.code === 'Space' && !el.dialog.open) {
+		if (e.code === 'Space' && !document.querySelector('dialog[open]')) {
 			e.preventDefault();
 			el.toggle.click();
 		}

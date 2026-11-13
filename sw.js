@@ -3,13 +3,13 @@
  * 初回に ASSETS を事前キャッシュし、以降はネットワーク優先・失敗時キャッシュ。
  * ASSETS にファイルを追加・削除したら VERSION を上げること。
  */
-const VERSION = 'hiit-v3';
+const VERSION = 'hiit-v4';
 const ASSETS = [
 	'./',
 	'index.html',
 	'style.css',
 	'manifest.json',
-	'workouts.example.json',
+	'workouts.json',
 	'js/app.js',
 	'js/config.js',
 	'js/timer.js',
@@ -17,6 +17,8 @@ const ASSETS = [
 	'js/store.js',
 	'js/wakelock.js',
 	'js/source.js',
+	'js/library.js',
+	'js/editor.js',
 	'icons/icon.svg',
 	'icons/icon-180.png',
 	'icons/icon-192.png',
@@ -26,12 +28,8 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		caches.open(VERSION)
-			.then((cache) =>
-				cache.addAll(ASSETS).then(() =>
-					// workouts.json は置かない運用もあるので、無くてもインストールを失敗させない。
-					cache.add('workouts.json').catch(() => {})
-				)
-			)
+			// ブラウザのHTTPキャッシュにある古い版を取り込まないよう、サーバーから取り直す。
+			.then((cache) => cache.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
 			.then(() => self.skipWaiting())
 	);
 });
