@@ -28,7 +28,8 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		caches.open(VERSION)
-			.then((cache) => cache.addAll(ASSETS))
+			// ブラウザのHTTPキャッシュにある古い版を取り込まないよう、サーバーから取り直す。
+			.then((cache) => cache.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
 			.then(() => self.skipWaiting())
 	);
 });

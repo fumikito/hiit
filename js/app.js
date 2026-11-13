@@ -292,7 +292,7 @@ function editCurrent() {
 			workout: { ...item.workout, name: `${item.workout.name}（コピー）` },
 			title: 'プリセットを複製',
 			deletable: false,
-			onSave: (raw) => refreshList(`c:${saveMine(raw)}`),
+			onSave: (raw) => afterSave(saveMine(raw)),
 		});
 		return;
 	}
@@ -300,10 +300,13 @@ function editCurrent() {
 		workout: item.workout,
 		title: 'ワークアウトを編集',
 		deletable: true,
-		onSave: (raw) => refreshList(`c:${saveMine(raw, item.id)}`),
+		onSave: (raw) => afterSave(saveMine(raw, item.id)),
 		onDelete: () => {
-			deleteMine(item.id);
+			if (!deleteMine(item.id)) {
+				return false;
+			}
 			refreshList(items[0].key);
+			return true;
 		},
 	});
 }
@@ -314,8 +317,17 @@ function createNew() {
 		workout: null,
 		title: '新しいワークアウト',
 		deletable: false,
-		onSave: (raw) => refreshList(`c:${saveMine(raw)}`),
+		onSave: (raw) => afterSave(saveMine(raw)),
 	});
+}
+
+/** 保存できたら一覧を作り直してそれを選ぶ。できなければ false（フォームは開いたまま）。 */
+function afterSave(id) {
+	if (!id) {
+		return false;
+	}
+	refreshList(`c:${id}`);
+	return true;
 }
 
 /* ---------- 初期化 ---------- */

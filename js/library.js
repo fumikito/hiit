@@ -11,11 +11,22 @@ import { store } from './store.js';
 
 const KEY = 'myWorkouts';
 
-/** @returns {{id: string, raw: object}[]} */
+/**
+ * 保存されている配列をそのまま返す。書き戻しに使うので、壊れた要素も除かない。
+ *
+ * @returns {Array}
+ */
 function load() {
 	const list = store.get(KEY, []);
-	return Array.isArray(list) ? list.filter((item) => item && item.id && item.raw) : [];
+	return Array.isArray(list) ? list : [];
 }
+
+/**
+ * store.set の結果を判定する。失敗は false のときだけ。
+ * 更新直後はブラウザのキャッシュから旧版の store.js（戻り値なし＝undefined）が
+ * 読まれることがあり、それを失敗扱いにすると保存が一切できなくなるため。
+ */
+const saved = (result) => result !== false;
 
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
@@ -27,7 +38,11 @@ const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slic
  */
 export function entries(presets) {
 	const mine = [];
-	load().forEach(({ id, raw }) => {
+	load().forEach((item) => {
+		const { id, raw } = item || {};
+		if (!id || !raw) {
+			return;
+		}
 		try {
 			mine.push({ key: `c:${id}`, source: 'mine', id, workout: normalizeWorkout(raw) });
 		} catch {
@@ -40,21 +55,21 @@ export function entries(presets) {
 /**
  * マイワークアウトを保存する。id がなければ新規作成。
  *
- * @returns {string} 保存した id
+ * @returns {string|null} 保存した id。書き込めなかったら null
  */
 export function saveMine(raw, id = null) {
 	const list = load();
-	const target = id && list.find((item) => item.id === id);
+	const target = id && list.find((item) => item?.id === id);
 	if (target) {
 		target.raw = raw;
 	} else {
 		id = newId();
 		list.push({ id, raw });
 	}
-	store.set(KEY, list);
-	return id;
+	return saved(store.set(KEY, list)) ? id : null;
 }
 
+/** @returns {boolean} 書き込めたか */
 export function deleteMine(id) {
-	store.set(KEY, load().filter((item) => item.id !== id));
+	return saved(store.set(KEY, load().filter((item) => item?.id !== id)));
 }

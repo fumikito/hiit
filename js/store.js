@@ -12,11 +12,14 @@ export const store = {
 			return fallback;
 		}
 	},
+	/** @returns {boolean} 保存できたか（容量超過・保存禁止などで false） */
 	set(key, value) {
 		try {
 			localStorage.setItem(PREFIX + key, JSON.stringify(value));
+			return true;
 		} catch {
-			// 保存できなくても動作は継続する。
+			// 設定値などは保存できなくても動作は継続する。結果が要る呼び出し元は戻り値を見る。
+			return false;
 		}
 	},
 	remove(key) {

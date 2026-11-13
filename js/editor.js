@@ -19,6 +19,7 @@ const FIELDS = ['name', 'countdown', 'work', 'rest', 'rounds', 'roundRest'];
 const field = (name) => el.form.elements[`ed-${name}`];
 
 let handlers = {};
+const SAVE_FAILED = 'この端末に保存できませんでした。ブラウザの保存領域がいっぱいか、保存が禁止されている可能性があります';
 // 開いた直後は空欄でもエラーを出さない。入力するか保存を押してから出す。
 let touched = false;
 
@@ -50,14 +51,16 @@ function read() {
 			raw[key] = value;
 		}
 	});
+	// 既定値と同じ秒数は保存しない（既定値を変えたときに追従させるため）。
+	const defaults = { work: raw.work ?? 20, rest: raw.rest ?? 10 };
 	raw.sets = [...el.sets.children].map((row) => {
 		const set = { name: row.querySelector('.ed-set-name').value.trim() };
 		const work = numberOrUndefined(row.querySelector('.ed-set-work'));
 		const rest = numberOrUndefined(row.querySelector('.ed-set-rest'));
-		if (work !== undefined) {
+		if (work !== undefined && work !== defaults.work) {
 			set.work = work;
 		}
-		if (rest !== undefined) {
+		if (rest !== undefined && rest !== defaults.rest) {
 			set.rest = rest;
 		}
 		return Object.keys(set).length === 1 ? set.name : set;
@@ -116,8 +119,8 @@ function onSetsClick(e) {
  * @param {object|null} opts.workout 初期値（正規化済み）。null なら新規
  * @param {string} opts.title 見出し
  * @param {boolean} opts.deletable 削除ボタンを出すか
- * @param {(raw: object) => void} opts.onSave
- * @param {() => void} [opts.onDelete]
+ * @param {(raw: object) => boolean} opts.onSave 保存できたら true
+ * @param {() => boolean} [opts.onDelete] 削除できたら true
  */
 export function openEditor({ workout, title, deletable, onSave, onDelete }) {
 	handlers = { onSave, onDelete };
@@ -147,18 +150,27 @@ export function initEditor() {
 	});
 	$('#ed-cancel').addEventListener('click', () => el.dialog.close());
 	el.remove.addEventListener('click', () => {
-		if (confirm('このワークアウトを削除しますか？')) {
+		if (!confirm('このワークアウトを削除しますか？')) {
+			return;
+		}
+		if (handlers.onDelete?.()) {
 			el.dialog.close();
-			handlers.onDelete?.();
+		} else {
+			el.error.textContent = SAVE_FAILED;
 		}
 	});
 	el.form.addEventListener('submit', (e) => {
 		e.preventDefault();
 		touched = true;
 		const raw = preview();
-		if (raw) {
+		if (!raw) {
+			return;
+		}
+		// 保存できなかったときは、入力内容を失わないようフォームを開いたままにする。
+		if (handlers.onSave(raw)) {
 			el.dialog.close();
-			handlers.onSave(raw);
+		} else {
+			el.error.textContent = SAVE_FAILED;
 		}
 	});
 }
