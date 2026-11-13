@@ -57,30 +57,71 @@
 				<label><input id="opt-sound" type="checkbox"> ビープ音</label>
 				<label><input id="opt-voice" type="checkbox"> 種目名の読み上げ</label>
 			</div>
+			<section class="wk">
+				<p class="wk-label">選択中のワークアウト</p>
+				<p id="wk-current" class="wk-current"></p>
+				<div class="wk-actions">
+					<button id="wk-edit" class="btn btn-sub" type="button">編集</button>
+					<button id="wk-new" class="btn btn-sub" type="button">＋ 新規作成</button>
+				</div>
+				<p class="wk-note">作ったワークアウトはこの端末（このブラウザ）にだけ保存されます。</p>
+			</section>
 			<div class="fetch">
-				<button id="refetch" class="btn btn-main" type="button">workouts.json を再取得</button>
+				<button id="refetch" class="btn btn-sub" type="button">プリセットを再取得</button>
 				<p id="fetch-status" class="fetch-status" role="status"></p>
 			</div>
 			<details class="help">
-				<summary>現在の定義を見る</summary>
+				<summary>プリセットの定義（workouts.json）を見る</summary>
 				<pre id="source" class="source"></pre>
-			</details>
-			<details class="help">
-				<summary>書き方</summary>
-				<p>定義はサーバーの <code>hiit/workouts.json</code> を編集してください。アプリに戻ったとき（タイマー停止中）に自動で確認し、上のボタンでいつでも取り直せます。</p>
-				<ul>
-					<li><code>countdown</code> スタート前のカウントダウン秒</li>
-					<li><code>work</code> 各セットの運動秒（既定）</li>
-					<li><code>rest</code> セット間のインターバル秒（既定）</li>
-					<li><code>rounds</code> sets 全体の繰り返し回数</li>
-					<li><code>roundRest</code> ラウンド間の休憩秒（省略時は rest）</li>
-					<li><code>sets</code> 種目名の配列。<code>{"name":"プランク","work":60,"rest":15}</code> のように個別指定も可</li>
-				</ul>
 			</details>
 			<div class="dialog-actions">
 				<button id="settings-close" class="btn btn-sub" type="submit">閉じる</button>
 			</div>
 		</form>
 	</dialog>
+
+	<dialog id="editor" class="settings editor">
+		<form id="editor-form" novalidate>
+			<h2 id="editor-heading">ワークアウトを編集</h2>
+			<label class="ed-field ed-wide">
+				<span>ワークアウト名</span>
+				<input name="ed-name" type="text" required autocomplete="off">
+			</label>
+			<div class="ed-grid">
+				<label class="ed-field"><span>運動（秒）</span><input name="ed-work" type="number" inputmode="numeric" min="1" step="1"></label>
+				<label class="ed-field"><span>インターバル（秒）</span><input name="ed-rest" type="number" inputmode="numeric" min="0" step="1"></label>
+				<label class="ed-field"><span>カウントダウン（秒）</span><input name="ed-countdown" type="number" inputmode="numeric" min="0" step="1"></label>
+				<label class="ed-field"><span>ラウンド数</span><input name="ed-rounds" type="number" inputmode="numeric" min="1" step="1"></label>
+				<label class="ed-field"><span>ラウンド間の休憩（秒）</span><input name="ed-roundRest" type="number" inputmode="numeric" min="0" step="1"></label>
+			</div>
+			<h3 class="ed-sets-heading">種目 <small>秒数が空欄なら上の既定値を使います</small></h3>
+			<ol id="ed-sets" class="ed-sets"></ol>
+			<button id="ed-add" class="btn btn-sub ed-add" type="button">＋ 種目を追加</button>
+			<p id="ed-total" class="ed-total"></p>
+			<p id="ed-error" class="editor-error" role="alert"></p>
+			<div class="dialog-actions">
+				<button id="ed-delete" class="btn btn-danger" type="button" hidden>削除</button>
+				<button id="ed-cancel" class="btn btn-sub" type="button">キャンセル</button>
+				<button class="btn btn-main" type="submit">保存</button>
+			</div>
+		</form>
+	</dialog>
+
+	<template id="ed-set-row">
+		<li class="ed-set">
+			<div class="ed-set-head">
+				<input class="ed-set-name" type="text" placeholder="種目名" aria-label="種目名" autocomplete="off">
+				<span class="ed-set-tools">
+					<button type="button" data-act="up" aria-label="上へ">↑</button>
+					<button type="button" data-act="down" aria-label="下へ">↓</button>
+					<button type="button" data-act="remove" aria-label="削除">×</button>
+				</span>
+			</div>
+			<div class="ed-set-times">
+				<label>運動<input class="ed-set-work" type="number" inputmode="numeric" min="1" step="1" aria-label="運動（秒）"></label>
+				<label>休憩<input class="ed-set-rest" type="number" inputmode="numeric" min="0" step="1" aria-label="休憩（秒）"></label>
+			</div>
+		</li>
+	</template>
 </body>
 </html>

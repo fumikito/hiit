@@ -1,8 +1,10 @@
 # HIIT Timer
 
-A dependency-free HIIT interval timer web app (PWA, works offline). Workouts are defined in a JSON file. UI is in Japanese.
+A dependency-free HIIT interval timer web app (PWA, works offline). Create your own workouts in the app. UI is in Japanese.
 
-HIIT（高強度インターバルトレーニング）用のタイマーです。ワークアウトをJSONで定義し、静的ファイルとして置くだけで動きます。ビルド不要・依存ライブラリなし。PWAとしてホーム画面に追加でき、一度開けばオフラインでも使えます。
+HIIT（高強度インターバルトレーニング）用のタイマーです。ブラウザで開くだけで使え、ホーム画面に追加すればアプリのように動きます。一度開けばオフラインでも使えます。
+
+**👉 https://takahashifumiki.com/hiit/**
 
 ## 特徴
 
@@ -10,32 +12,52 @@ HIIT（高強度インターバルトレーニング）用のタイマーです�
 - 段階ごとの進捗バーと、全体の進捗バー（運動・休憩を色分け）
 - 残り3秒のビープ音、種目名の読み上げ（それぞれオン/オフ可）
 - 実行中は画面のスリープを防止（Screen Wake Lock 対応ブラウザ）
-- 定義はサーバー上の `workouts.json` が正。アプリに戻ったときや設定画面のボタンで再取得
-- JSONに誤りがあっても、最後に読み込めた定義で動き続ける
+- 自分のワークアウトをフォームで作成・編集（種目の追加・並べ替え・個別の秒数）
+- ビルド不要・依存ライブラリなし。静的ファイルを置くだけで自分のサーバーでも動く
+
+## 使い方
+
+1. https://takahashifumiki.com/hiit/ を開く
+2. ホーム画面に追加する（推奨）
+   - **iPhone**: Safari の共有 →「ホーム画面に追加」
+   - **Android**: Chrome のメニュー →「ホーム画面に追加」（または「アプリをインストール」）
+3. 左上のメニューでワークアウトを選び、「スタート」
+
+### ワークアウトを作る
+
+右上の歯車（設定）から操作します。
+
+- **＋ 新規作成**：一から作る
+- **複製して編集**：選んでいるプリセットをもとに作る
+- **編集**：自分で作ったワークアウトを直す・削除する
+
+一覧には、最初から入っている「プリセット」と、自分で作った「マイワークアウト」が並びます。プリセットは配信元が更新すると自動で新しくなり、マイワークアウトには影響しません。
+
+### 注意
+
+- **マイワークアウトは、その端末のそのブラウザにだけ保存されます。** 別の端末とは共有されず、ブラウザのデータを消すと消えます。
+- **iPhone では Safari とホーム画面のアプリで保存場所が別です。** ホーム画面に追加してから、アプリ側で作ってください。
+- iOS では消音モード（マナーモード）だとビープ音が鳴らない場合があります。
+- 画面をロックするとタイマーの音は止まります（ブラウザの制約）。実行中はスリープ防止が効くので、画面は点けたまま使ってください。
+- 音と読み上げは、最初にスタートボタンを押したときに有効になります（ブラウザの自動再生制限のため）。
 
 ## 動作環境
 
 - 動作確認済み：iOS Safari（実機、シミュレーターの iOS 17.4 / 27.2）、デスクトップ版 Chrome
 - 標準的な Web API（ES Modules、Service Worker、Web Audio）だけを使っているので、最近のモダンブラウザなら動くはずです（Android・Firefox は未確認）
-- **HTTPS で配信すること**（Service Worker の要件。`localhost` は例外として HTTP で動く）
-- 静的ファイルを配信できるWebサーバーなら何でもよい（Apache / nginx / GitHub Pages など）
 
-## インストール
+## 自分のサーバーに置く
 
-Webサーバーの公開ディレクトリに置きます。サブディレクトリでもルートでも動きます。
+静的ファイルを配信できるWebサーバーなら何でも動きます（Apache / nginx / GitHub Pages など）。**HTTPS で配信してください**（Service Worker の要件。`localhost` は例外として HTTP で動きます）。サブディレクトリでもルートでも動きます。
 
 ```bash
 cd /path/to/document_root
 git clone https://github.com/fumikito/hiit.git
-cd hiit
-cp workouts.example.json workouts.json
 ```
 
-`https://example.com/hiit/` を開けば使えます。`workouts.json` を置かない場合は `workouts.example.json` のサンプルで動きます。
+`https://example.com/hiit/` を開けば使えます。プリセットを変えたい場合は `workouts.json` を編集します（次の節）。
 
-### git clone せずに配置する場合
-
-手元で clone してから、必要なファイルだけを rsync などで送ります。
+git clone せずに配置する場合は、手元で clone してから必要なファイルだけを送ります。
 
 ```bash
 rsync -av \
@@ -43,16 +65,16 @@ rsync -av \
   ./ user@example.com:/path/to/document_root/hiit/
 ```
 
-### ローカルで試す
+ローカルで試すなら：
 
 ```bash
 python3 -m http.server 8765
 # http://localhost:8765/ を開く
 ```
 
-## ワークアウトの定義
+## プリセットの定義（workouts.json）
 
-`workouts.json` に書きます。`workouts` 配列に複数登録でき、画面上部で切り替えられます。
+全員に配られるプリセットは `workouts.json` に書きます。`workouts` 配列に複数登録できます。各自のマイワークアウトはアプリ内で作るので、ここを編集する必要はありません。
 
 ```json
 {
@@ -88,26 +110,13 @@ python3 -m http.server 8765
 - 合計時間は自動で計算され、選択メニューと画面に表示されます。
 - 名前で選択中のワークアウトを覚えているので、順番を入れ替えても選択は保たれます。
 
-### 定義の更新が反映されるタイミング
+### プリセットの更新が反映されるタイミング
 
 1. アプリを開いたとき
 2. アプリに戻ってきたとき（タイマー停止中のみ。運動中は割り込まない）
-3. 設定（歯車）→「workouts.json を再取得」を押したとき
+3. 設定（歯車）→「プリセットを再取得」を押したとき
 
-オフラインのときは、最後に取得できた定義で動きます。
-
-## スマートフォンで使う
-
-- **iPhone**: Safari で開き、共有 →「ホーム画面に追加」
-- **Android**: Chrome のメニュー →「ホーム画面に追加」（または「アプリをインストール」）
-
-ホーム画面から起動すると全画面のアプリとして動きます。一度オンラインで開けば、以降はオフラインでも起動できます。
-
-### 注意
-
-- iOS では消音モード（マナーモード）だとビープ音が鳴らない場合があります。
-- 画面をロックするとタイマーの音は止まります（ブラウザの制約）。実行中はスリープ防止が効くので、画面は点けたまま使ってください。
-- 音と読み上げは、最初にスタートボタンを押したときに有効になります（ブラウザの自動再生制限のため）。
+オフラインのときや `workouts.json` に誤りがあるときは、最後に読み込めた定義で動きます。
 
 ## サーバー設定
 
@@ -151,12 +160,14 @@ index.html             画面
 style.css
 manifest.json          PWA の設定
 sw.js                  Service Worker（オフライン対応）
-workouts.example.json  定義のサンプル（workouts.json が無いときに使われる）
+workouts.json          プリセットの定義
 js/
   app.js               画面の制御
   config.js            定義の検証と、実行順への展開
   timer.js             タイマー本体（終了時刻ベースで、バックグラウンドでもずれない）
-  source.js            定義の取得
+  source.js            プリセットの取得
+  library.js           プリセットとマイワークアウトの一覧・保存
+  editor.js            ワークアウトの編集フォーム
   sound.js             ビープ音・読み上げ
   wakelock.js          スリープ防止
   store.js             localStorage のラッパー

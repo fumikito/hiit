@@ -1,5 +1,5 @@
 /**
- * workouts.json（唯一の正）の取得。置いていなければ workouts.example.json を使う。
+ * プリセット（workouts.json）の取得。
  *
  * - 通常取得: Service Worker 経由（ネットワーク優先、オフライン時はキャッシュ）。
  * - fresh 取得: ?fresh を付けると SW はキャッシュを使わずネットワークのみで取りに行く。
@@ -11,7 +11,6 @@ import { parseWorkouts } from './config.js';
 import { store } from './store.js';
 
 const URL_PATH = 'workouts.json';
-const EXAMPLE_PATH = 'workouts.example.json';
 
 /** kind: offline（接続不可）| http（404等）| invalid（JSONの誤り） */
 const fail = (kind, message) => Object.assign(new Error(message), { kind });
@@ -22,12 +21,10 @@ const fail = (kind, message) => Object.assign(new Error(message), { kind });
  */
 export async function fetchWorkouts({ fresh = false } = {}) {
 	const res = await request(URL_PATH, fresh);
-	// workouts.json を置いていなければ同梱のサンプルで動かす。
-	const found = res.status === 404 ? await request(EXAMPLE_PATH, fresh) : res;
-	if (!found.ok) {
-		throw fail('http', `workouts.json を取得できませんでした（HTTP ${found.status}）`);
+	if (!res.ok) {
+		throw fail('http', `workouts.json を取得できませんでした（HTTP ${res.status}）`);
 	}
-	const text = await found.text();
+	const text = await res.text();
 	let list;
 	try {
 		list = parseWorkouts(text);

@@ -2,12 +2,24 @@
  * ワークアウト定義(JSON)の検証とフェーズ列への展開。
  */
 
-const num = (value, fallback, key, { min = 0 } = {}) => {
+const LABELS = {
+	work: '運動の秒数',
+	rest: 'インターバルの秒数',
+	countdown: 'カウントダウンの秒数',
+	rounds: 'ラウンド数',
+	roundRest: 'ラウンド間の休憩の秒数',
+};
+
+/**
+ * 数値項目を検証する。未指定なら fallback。
+ * エラー文はJSONを書く人にもフォームの利用者にも通じるよう「どれの・何が」で書く。
+ */
+const num = (value, fallback, owner, key, { min = 0 } = {}) => {
 	if (value === undefined || value === null) {
 		return fallback;
 	}
 	if (typeof value !== 'number' || !Number.isFinite(value) || value < min) {
-		throw new Error(`「${key}」は${min}以上の数値で指定してください（値: ${JSON.stringify(value)}）`);
+		throw new Error(`「${owner}」の${LABELS[key]}は${min}以上の数値にしてください（${key}: ${JSON.stringify(value)}）`);
 	}
 	return value;
 };
@@ -23,13 +35,13 @@ export function normalizeWorkout(w) {
 		throw new Error('ワークアウトはオブジェクトで指定してください');
 	}
 	const name = String(w.name || '名称未設定');
-	const work = num(w.work, 20, `${name}.work`, { min: 1 });
-	const rest = num(w.rest, 10, `${name}.rest`);
-	const countdown = num(w.countdown, 10, `${name}.countdown`);
-	const rounds = Math.floor(num(w.rounds, 1, `${name}.rounds`, { min: 1 }));
-	const roundRest = num(w.roundRest, rest, `${name}.roundRest`);
+	const work = num(w.work, 20, name, 'work', { min: 1 });
+	const rest = num(w.rest, 10, name, 'rest');
+	const countdown = num(w.countdown, 10, name, 'countdown');
+	const rounds = Math.floor(num(w.rounds, 1, name, 'rounds', { min: 1 }));
+	const roundRest = num(w.roundRest, rest, name, 'roundRest');
 	if (!Array.isArray(w.sets) || !w.sets.length) {
-		throw new Error(`「${name}」の sets は1件以上の配列で指定してください`);
+		throw new Error(`「${name}」には種目を1つ以上入れてください（sets）`);
 	}
 	const sets = w.sets.map((s, i) => {
 		const set = typeof s === 'string' ? { name: s } : s;
@@ -39,11 +51,11 @@ export function normalizeWorkout(w) {
 		const label = String(set.name || `セット${i + 1}`);
 		return {
 			name: label,
-			work: num(set.work, work, `${label}.work`, { min: 1 }),
-			rest: num(set.rest, rest, `${label}.rest`),
+			work: num(set.work, work, label, 'work', { min: 1 }),
+			rest: num(set.rest, rest, label, 'rest'),
 		};
 	});
-	return { name, countdown, rounds, roundRest, sets };
+	return { name, countdown, work, rest, rounds, roundRest, sets };
 }
 
 /**

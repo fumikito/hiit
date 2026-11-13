@@ -203,6 +203,7 @@ body[data-paused="1"] .time { opacity: 0.55; animation: blink 1.2s steps(2) infi
 .btn-sub { background: rgb(0 0 0 / 0.22); color: var(--fg); }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.5; cursor: default; }
+.btn-danger { background: #7f1d1d; color: #fff; }
 
 /* ---------- 横向き ---------- */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -216,6 +217,7 @@ body[data-paused="1"] .time { opacity: 0.55; animation: blink 1.2s steps(2) infi
 .settings {
 	width: min(100% - 32px, 640px);
 	max-height: calc(100dvh - 32px);
+	overflow: auto;
 	padding: 20px;
 	border: 0;
 	border-radius: 16px;
@@ -243,6 +245,7 @@ body[data-paused="1"] .time { opacity: 0.55; animation: blink 1.2s steps(2) infi
 	font: 13px/1.5 ui-monospace, Menlo, monospace;
 	white-space: pre-wrap;
 }
+.editor-error { min-height: 1.4em; margin: 6px 0; color: #ff8a8e; font-size: 14px; }
 .help { font-size: 14px; color: var(--muted); }
 .help code { color: var(--fg); }
 .help ul { padding-left: 1.2em; }
@@ -254,3 +257,72 @@ body[data-paused="1"] .time { opacity: 0.55; animation: blink 1.2s steps(2) infi
 	margin-top: 16px;
 }
 .dialog-actions .btn { min-height: 44px; font-size: 16px; }
+
+/* ---------- 選択中のワークアウト（設定内） ---------- */
+.wk {
+	margin-bottom: 16px;
+	padding: 12px;
+	border-radius: 10px;
+	background: #18181b;
+}
+.wk-label { margin: 0; color: var(--muted); font-size: 13px; }
+.wk-current { margin: 2px 0 10px; font-size: 17px; font-weight: 700; }
+.wk-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wk-actions .btn { min-height: 44px; background: #3f3f46; font-size: 15px; }
+.wk-note { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+
+/* ---------- 編集フォーム ---------- */
+.editor input {
+	width: 100%;
+	min-height: 40px;
+	padding: 6px 10px;
+	border: 1px solid #3f3f46;
+	border-radius: 8px;
+	background: #18181b;
+	color: var(--fg);
+	font: inherit;
+	font-size: 16px; /* iOS が入力時にズームしないよう16px以上 */
+}
+.ed-field { display: block; }
+.ed-field span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 13px; }
+.ed-wide { margin-bottom: 12px; }
+.ed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ed-sets-heading { margin: 18px 0 8px; font-size: 16px; }
+.ed-sets-heading small { margin-left: 6px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.ed-sets { margin: 0; padding: 0; list-style: none; counter-reset: set; }
+.ed-set {
+	position: relative;
+	margin-bottom: 8px;
+	padding: 10px 10px 10px 34px;
+	border-radius: 10px;
+	background: #18181b;
+	counter-increment: set;
+}
+.ed-set::before {
+	position: absolute;
+	top: 18px;
+	left: 10px;
+	color: var(--muted);
+	font-size: 14px;
+	font-variant-numeric: tabular-nums;
+	content: counter(set);
+}
+.ed-set-head { display: flex; align-items: center; gap: 6px; }
+.ed-set-head .ed-set-name { flex: 1; min-width: 0; }
+.ed-set-times { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
+.ed-set-times label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; }
+.ed-set-times label input { width: 72px; }
+.ed-set-tools { display: flex; flex-shrink: 0; gap: 4px; }
+.ed-set-tools button {
+	width: 32px;
+	height: 36px;
+	border: 0;
+	border-radius: 8px;
+	background: #3f3f46;
+	color: var(--fg);
+	font-size: 16px;
+}
+.ed-set:first-child [data-act="up"], .ed-set:last-child [data-act="down"] { visibility: hidden; }
+.ed-add { width: 100%; min-height: 44px; font-size: 15px; }
+.ed-total { margin: 12px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.editor .dialog-actions .btn-danger { margin-right: auto; }
