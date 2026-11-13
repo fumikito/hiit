@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<title>HIITタイマー</title>
+	<meta name="robots" content="noindex">
+	<meta name="theme-color" content="#18181b">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="HIIT">
+	<link rel="manifest" href="manifest.json">
+	<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+	<link rel="apple-touch-icon" href="icons/icon-180.png">
+	<link rel="stylesheet" href="style.css">
+	<script type="module" src="js/app.js"></script>
+</head>
+<body data-state="idle">
+	<header class="bar">
+		<label class="picker">
+			<span id="workout-title" class="picker-title">読み込み中…</span>
+			<select id="workout-select" aria-label="ワークアウトを選択"></select>
+		</label>
+		<button id="open-settings" class="icon-btn" type="button" aria-label="設定">
+			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+		</button>
+	</header>
+
+	<p id="notice" class="notice" role="alert" hidden></p>
+
+	<main class="stage">
+		<p id="phase-label" class="phase-label">スタート待ち</p>
+		<p id="counter" class="counter"></p>
+		<h1 id="phase-name" class="phase-name"></h1>
+		<div id="time" class="time" role="timer" aria-live="off">0</div>
+		<div class="phase-track"><div id="phase-bar" class="phase-bar"></div></div>
+		<p id="next" class="next"></p>
+	</main>
+
+	<footer class="dock">
+		<div class="total">
+			<div id="segments" class="segments"></div>
+			<div id="total-fill" class="segments segments-done"></div>
+		</div>
+		<div class="total-meta"><span id="elapsed"></span><span id="left"></span></div>
+		<div class="controls">
+			<button id="reset" class="btn btn-sub" type="button" disabled>リセット</button>
+			<button id="toggle" class="btn btn-main" type="button" disabled>スタート</button>
+		</div>
+	</footer>
+
+	<dialog id="settings" class="settings">
+		<form method="dialog">
+			<h2>設定</h2>
+			<div class="opts">
+				<label><input id="opt-sound" type="checkbox"> ビープ音</label>
+				<label><input id="opt-voice" type="checkbox"> 種目名の読み上げ</label>
+			</div>
+			<div class="fetch">
+				<button id="refetch" class="btn btn-main" type="button">workouts.json を再取得</button>
+				<p id="fetch-status" class="fetch-status" role="status"></p>
+			</div>
+			<details class="help">
+				<summary>現在の定義を見る</summary>
+				<pre id="source" class="source"></pre>
+			</details>
+			<details class="help">
+				<summary>書き方</summary>
+				<p>定義はサーバーの <code>hiit/workouts.json</code> を編集してください。アプリに戻ったとき（タイマー停止中）に自動で確認し、上のボタンでいつでも取り直せます。</p>
+				<ul>
+					<li><code>countdown</code> スタート前のカウントダウン秒</li>
+					<li><code>work</code> 各セットの運動秒（既定）</li>
+					<li><code>rest</code> セット間のインターバル秒（既定）</li>
+					<li><code>rounds</code> sets 全体の繰り返し回数</li>
+					<li><code>roundRest</code> ラウンド間の休憩秒（省略時は rest）</li>
+					<li><code>sets</code> 種目名の配列。<code>{"name":"プランク","work":60,"rest":15}</code> のように個別指定も可</li>
+				</ul>
+			</details>
+			<div class="dialog-actions">
+				<button id="settings-close" class="btn btn-sub" type="submit">閉じる</button>
+			</div>
+		</form>
+	</dialog>
+</body>
+</html>

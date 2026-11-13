@@ -1,0 +1,12 @@
+# HIITタイマー
+# CloudFlare（エッジ）とブラウザに古いJS/CSSを長く持たせないための設定。
+# 既定だと静的ファイルは max-age=14400（4時間）でキャッシュされ、更新直後に
+# 新しい index.html と古い js/*.js が混ざって壊れる恐れがある。
+# オフライン動作は Service Worker のキャッシュが担うので、HTTPキャッシュは不要。
+<IfModule mod_headers.c>
+	Header set Cache-Control "no-cache"
+</IfModule>
+
+# ドキュメントルートに git clone した場合に .git や README などを公開しない。
+RedirectMatch 404 /\.git
+RedirectMatch 404 /(README\.md|LICENSE|\.gitignore)$
