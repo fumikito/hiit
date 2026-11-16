@@ -1,29 +1,31 @@
 /**
  * オフライン対応の Service Worker。
  * 初回に ASSETS を事前キャッシュし、以降はネットワーク優先・失敗時キャッシュ。
- * ASSETS にファイルを追加・削除したら VERSION を上げること。
+ * VERSION と ASSETS は bin/stamp.mjs が生成する（JS/CSS は内容ハッシュ付きURL）。
  */
-const VERSION = 'hiit-v4';
+// stamp:start（bin/stamp.mjs が生成する。手で編集しない）
+const VERSION = 'hiit-25ae189e';
 const ASSETS = [
 	'./',
 	'index.html',
-	'style.css',
+	'style.css?v=039ba0a2',
 	'manifest.json',
 	'workouts.json',
-	'js/app.js',
-	'js/config.js',
-	'js/timer.js',
-	'js/sound.js',
-	'js/store.js',
-	'js/wakelock.js',
-	'js/source.js',
-	'js/library.js',
-	'js/editor.js',
-	'icons/icon.svg',
+	'js/app.js?v=efe13882',
+	'js/config.js?v=0a6cd038',
+	'js/editor.js?v=3b6d2f38',
+	'js/library.js?v=3ed8f56c',
+	'js/sound.js?v=a1d6cbb5',
+	'js/source.js?v=bb3ac8e8',
+	'js/store.js?v=7905432d',
+	'js/timer.js?v=ccfd0433',
+	'js/wakelock.js?v=9be72e49',
 	'icons/icon-180.png',
 	'icons/icon-192.png',
 	'icons/icon-512.png',
+	'icons/icon.svg',
 ];
+// stamp:end
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(

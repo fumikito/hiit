@@ -8,5 +8,6 @@
 </IfModule>
 
 # ドキュメントルートに git clone した場合に .git や README などを公開しない。
-RedirectMatch 404 /\.git
+RedirectMatch 404 /\.(git|claude)
+RedirectMatch 404 /bin/stamp\.mjs$
 RedirectMatch 404 /(README\.md|LICENSE|\.gitignore)$
