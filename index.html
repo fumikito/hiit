@@ -13,8 +13,24 @@
 	<link rel="manifest" href="manifest.json">
 	<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 	<link rel="apple-touch-icon" href="icons/icon-180.png">
-	<link rel="stylesheet" href="style.css">
-	<script type="module" src="js/app.js"></script>
+	<link rel="stylesheet" href="style.css?v=039ba0a2">
+	<!-- ?v= とインポートマップは bin/stamp.mjs が生成する -->
+	<script type="importmap">
+	{
+		"imports": {
+			"./js/app.js": "./js/app.js?v=efe13882",
+			"./js/config.js": "./js/config.js?v=0a6cd038",
+			"./js/editor.js": "./js/editor.js?v=3b6d2f38",
+			"./js/library.js": "./js/library.js?v=3ed8f56c",
+			"./js/sound.js": "./js/sound.js?v=a1d6cbb5",
+			"./js/source.js": "./js/source.js?v=bb3ac8e8",
+			"./js/store.js": "./js/store.js?v=7905432d",
+			"./js/timer.js": "./js/timer.js?v=ccfd0433",
+			"./js/wakelock.js": "./js/wakelock.js?v=9be72e49"
+		}
+	}
+	</script>
+	<script type="module" src="js/app.js?v=efe13882"></script>
 </head>
 <body data-state="idle">
 	<header class="bar">

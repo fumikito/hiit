@@ -61,7 +61,8 @@ git clone せずに配置する場合は、手元で clone してから必要な
 
 ```bash
 rsync -av \
-  --exclude='.git' --exclude='.gitignore' --exclude='README.md' --exclude='LICENSE' \
+  --exclude='.git' --exclude='.gitignore' --exclude='.claude' --exclude='bin' \
+  --exclude='README.md' --exclude='LICENSE' \
   ./ user@example.com:/path/to/document_root/hiit/
 ```
 
@@ -125,7 +126,7 @@ python3 -m http.server 8765
 同梱の `.htaccess` が次を行います。
 
 - `Cache-Control: no-cache` を付け、更新後に古いJS/CSSが残らないようにする（オフライン用のキャッシュは Service Worker が持つ）
-- `.git`・`README.md`・`LICENSE` などを 404 にする
+- `.git`・`.claude`・`bin`・`README.md`・`LICENSE` などを 404 にする
 
 ### nginx
 
@@ -135,13 +136,13 @@ python3 -m http.server 8765
 # ^~ を付けないと、既存の「location ~* \.(js|css)$」などが優先されて効かない
 location ^~ /hiit/ {
     add_header Cache-Control "no-cache";
-    location ~ /hiit/(\.git|README\.md|LICENSE|\.gitignore) { return 404; }
+    location ~ /hiit/(\.git|\.claude|bin/stamp\.mjs|README\.md|LICENSE|\.gitignore) { return 404; }
 }
 ```
 
 ### CDN（CloudFlare など）
 
-CDN がブラウザ向けのキャッシュ期間を上書きする場合でも、Service Worker が毎回サーバーに再検証するので、2回目以降の表示には影響しません。
+CDN がブラウザ向けのキャッシュ期間を上書きしても（CloudFlare は静的ファイルに既定で `max-age=14400` を付けます）、JS/CSS の URL には内容ハッシュ（`?v=`）が付いているので、変更したファイルは新しい URL として読み込まれます。`index.html` は `no-cache` で届くので、新しいハッシュはすぐに伝わります。
 
 ## カスタマイズ
 
@@ -149,9 +150,19 @@ CDN がブラウザ向けのキャッシュ期間を上書きする場合でも�
 - 段階ごとの色：`style.css` の `:root` にある `--prepare` / `--work` / `--rest` / `--done`
 - アイコン：`icons/`（`icon.svg` と、iOS 用の PNG 180/192/512px）
 
-### Service Worker のキャッシュ
+### JS/CSS を変更したら（キャッシュ対策）
 
-ファイルの中身を変えるだけなら、次に開いたときに自動で反映されます。**ファイルを追加・削除したときは、`sw.js` の `ASSETS` を更新し、`VERSION` を上げてください。**
+**JS・CSS・アイコンを変更・追加・削除したら、配置する前に次を実行してください**（Node.js 18 以上。依存パッケージはありません）。
+
+```bash
+node bin/stamp.mjs          # index.html と sw.js を書き換える
+node bin/stamp.mjs --check  # 最新か確かめる（古ければ終了コード 1）
+```
+
+- `index.html`：`style.css` と `js/*.js` の URL に内容ハッシュ（`?v=`）を付け、インポートマップでモジュール同士の `import` もハッシュ付き URL に解決させます。
+- `sw.js`：事前キャッシュする `ASSETS` の一覧と `VERSION` を作り直します。何かが変わると Service Worker が更新され、古いキャッシュは削除されます。
+
+実行し忘れると、ブラウザや CDN のキャッシュに残った古い JS と新しい JS が混ざって動かなくなることがあります。`workouts.json` だけを編集した場合は実行しなくても反映されます。
 
 ## ファイル構成
 
@@ -160,6 +171,7 @@ index.html             画面
 style.css
 manifest.json          PWA の設定
 sw.js                  Service Worker（オフライン対応）
+bin/stamp.mjs          キャッシュ対策のハッシュ付け（配置前に実行）
 workouts.json          プリセットの定義
 js/
   app.js               画面の制御
