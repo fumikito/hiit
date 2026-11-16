@@ -3,10 +3,14 @@
  * setInterval の回数ではなく終了時刻で管理するので、
  * バックグラウンドで間引かれてもズレない。
  */
+const LOOKAHEAD = 250; // ms。tick の間隔（100ms）より長く取り、取りこぼさない。
+
 export class Timer {
 	/**
 	 * @param {object[]} phases
-	 * @param {{phase?:Function, tick?:Function, count?:Function, done?:Function}} handlers
+	 * @param {{phase?:Function, tick?:Function, beat?:Function, done?:Function}} handlers
+	 *   beat(sec, delayMs): delayMs 後に表示が sec 秒に変わる。音はその時刻に予約する。
+	 *   stop(): 一時停止・リセット。予約済みの音を取り消す。
 	 */
 	constructor(phases, handlers = {}) {
 		this.phases = phases;
@@ -21,11 +25,12 @@ export class Timer {
 
 	reset() {
 		this.stopLoop();
+		this.on.stop?.();
 		this.state = 'idle';
 		this.index = 0;
 		this.remaining = this.phases[0].duration * 1000;
 		this.endAt = 0;
-		this.lastSecond = null;
+		this.lastBeat = null;
 		this.emitTick();
 	}
 
@@ -53,6 +58,7 @@ export class Timer {
 		this.remaining = Math.max(0, this.endAt - performance.now());
 		this.state = 'paused';
 		this.stopLoop();
+		this.on.stop?.();
 		this.emitTick();
 	}
 
@@ -84,16 +90,24 @@ export class Timer {
 			// 画面復帰時などに大きく遅れて追いついた場合は音を鳴らさない。
 			const late = this.phase.duration * 1000 - this.remaining > 1500;
 			this.on.phase?.(this.phase, !late);
-			this.lastSecond = null;
 		}
-		const sec = Math.ceil(this.remaining / 1000);
-		if (sec !== this.lastSecond) {
-			if (this.lastSecond !== null && sec <= 3 && sec >= 1) {
-				this.on.count?.(sec);
-			}
-			this.lastSecond = sec;
-		}
+		this.scheduleBeat(now);
 		this.emitTick();
+	}
+
+	/**
+	 * 次の秒の境目が LOOKAHEAD 以内に来るなら、その時刻を伝える。
+	 * setInterval の揺れ（最大100ms）が音に乗らないよう、音は境目ちょうどに予約してもらう。
+	 * 境目で 0 になる（フェーズが切り替わる）ときは phase 側で鳴らすので伝えない。
+	 */
+	scheduleBeat(now) {
+		const sec = Math.ceil(this.remaining / 1000) - 1;
+		const at = this.endAt - sec * 1000;
+		const delay = at - now;
+		if (sec >= 1 && delay <= LOOKAHEAD && at !== this.lastBeat) {
+			this.lastBeat = at;
+			this.on.beat?.(sec, delay);
+		}
 	}
 
 	finish() {

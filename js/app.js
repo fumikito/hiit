@@ -1,7 +1,7 @@
 import { buildPhases, totalSeconds } from './config.js';
 import { fetchWorkouts, rememberGood, lastGood } from './source.js';
 import { Timer } from './timer.js';
-import { unlock, beep, chime, say } from './sound.js';
+import { unlock, beep, tick, chime, say, cancelScheduled } from './sound.js';
 import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 import { store } from './store.js';
 import { entries, saveMine, deleteMine } from './library.js';
@@ -34,6 +34,7 @@ const el = {
 	current: $('#wk-current'),
 	edit: $('#wk-edit'),
 	voice: $('#opt-voice'),
+	tick: $('#opt-tick'),
 };
 
 let currentJson = '';
@@ -49,7 +50,8 @@ const fmt = (sec) => {
 	const s = Math.max(0, Math.round(sec));
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-const options = () => ({ sound: el.sound.checked, voice: el.voice.checked });
+const options = () => ({ sound: el.sound.checked, voice: el.voice.checked, tick: el.tick.checked });
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /* ---------- 描画 ---------- */
 
@@ -77,39 +79,40 @@ function render(t) {
 	el.body.dataset.paused = t.state === 'paused' ? '1' : '';
 
 	if (t.state === 'idle') {
-		el.label.textContent = 'スタート待ち';
+		el.label.textContent = 'Ready';
 		el.name.textContent = w.name;
 	} else if (t.state === 'done') {
-		el.label.textContent = '完了';
-		el.name.textContent = 'おつかれさまでした';
+		el.label.textContent = 'Finished';
+		el.name.textContent = 'Great job!';
 	} else {
-		el.label.textContent = t.state === 'paused' ? `${p.label}（一時停止中）` : p.label;
+		el.label.textContent = t.state === 'paused' ? `${p.label} · Paused` : p.label;
 		el.name.textContent = p.name;
 	}
 	const sec = t.state === 'done' ? 0 : Math.ceil(t.remaining / 1000);
 	el.time.textContent = sec >= 60 ? fmt(sec) : String(sec);
 
 	if (t.state === 'idle' || p.set === undefined) {
-		const rounds = w.rounds > 1 ? ` × ${w.rounds}ラウンド` : '';
-		el.counter.textContent = `全${w.sets.length}セット${rounds}・${fmt(total)}`;
+		const rounds = w.rounds > 1 ? ` × ${plural(w.rounds, 'round')}` : '';
+		el.counter.textContent = `${plural(w.sets.length, 'set')}${rounds} · ${fmt(total)}`;
 	} else {
-		const parts = [`セット ${p.set + 1} / ${w.sets.length}`];
+		const parts = [`Set ${p.set + 1} / ${w.sets.length}`];
 		if (w.rounds > 1) {
-			parts.push(`ラウンド ${p.round + 1} / ${w.rounds}`);
+			parts.push(`Round ${p.round + 1} / ${w.rounds}`);
 		}
 		el.counter.textContent = parts.join('　');
 	}
 
-	el.next.textContent = t.state !== 'done' && p.next ? `次：${p.next}` : '';
+	el.next.textContent = t.state !== 'done' && p.next ? `Next: ${p.next}` : '';
 	const ratio = t.state === 'done' ? 1 : 1 - t.remaining / (p.duration * 1000);
 	el.phaseBar.style.transform = `scaleX(${ratio})`;
 
 	const elapsed = t.state === 'done' ? total : t.elapsed();
 	el.totalFill.style.clipPath = `inset(0 ${100 - (elapsed / total) * 100}% 0 0)`;
-	el.elapsed.textContent = `経過 ${fmt(elapsed)}`;
-	el.left.textContent = `残り ${fmt(total - elapsed)} / 全体 ${fmt(total)}`;
+	el.elapsed.textContent = `Elapsed ${fmt(elapsed)}`;
+	el.left.textContent = `Left ${fmt(total - elapsed)} / Total ${fmt(total)}`;
 
-	el.toggle.textContent = t.state === 'running' ? '一時停止' : t.state === 'paused' ? '再開' : 'スタート';
+	// アイコンは CSS（.is-pause）で切り替える。読み上げ用の名前だけ変える。
+	el.toggle.setAttribute('aria-label', t.state === 'running' ? 'Pause' : t.state === 'paused' ? 'Resume' : 'Start');
 	el.toggle.classList.toggle('is-pause', t.state === 'running');
 }
 
@@ -131,6 +134,7 @@ function onPhase(p, audible) {
 
 function loadWorkout(index) {
 	timer?.stopLoop();
+	cancelScheduled();
 	releaseWakeLock();
 	const i = items[index] ? index : 0;
 	const w = items[i].workout;
@@ -144,7 +148,19 @@ function loadWorkout(index) {
 	timer = new Timer(phases, {
 		tick: render,
 		phase: onPhase,
-		count: () => options().sound && beep(880, 0.15),
+		stop: cancelScheduled,
+		// ラスト3秒は大きな「ピッ」、それ以外は小さな「チッ」。秒の境目ちょうどに予約する。
+		beat: (sec, delayMs) => {
+			const o = options();
+			if (!o.sound) {
+				return;
+			}
+			if (sec <= 3) {
+				beep(880, 0.15, 0.4, delayMs / 1000);
+			} else if (o.tick) {
+				tick(delayMs / 1000);
+			}
+		},
 		done: () => {
 			releaseWakeLock();
 			if (options().sound) {
@@ -166,13 +182,13 @@ function loadWorkout(index) {
 function refreshList(selectKey = null) {
 	items = entries(presets);
 	el.select.innerHTML = '';
-	const groups = { preset: 'プリセット', mine: 'マイワークアウト' };
+	const groups = { preset: 'Presets', mine: 'My Workouts' };
 	Object.entries(groups).forEach(([source, label]) => {
 		const group = document.createElement('optgroup');
 		group.label = label;
 		items.forEach((item, i) => {
 			if (item.source === source) {
-				group.append(new Option(`${item.workout.name}（${fmt(totalSeconds(buildPhases(item.workout)))}）`, String(i)));
+				group.append(new Option(`${item.workout.name} (${fmt(totalSeconds(buildPhases(item.workout)))})`, String(i)));
 			}
 		});
 		if (group.children.length) {
@@ -345,8 +361,10 @@ async function init() {
 
 	el.sound.checked = store.get('sound', true);
 	el.voice.checked = store.get('voice', true);
+	el.tick.checked = store.get('tick', true);
 	el.sound.addEventListener('change', () => store.set('sound', el.sound.checked));
 	el.voice.addEventListener('change', () => store.set('voice', el.voice.checked));
+	el.tick.addEventListener('change', () => store.set('tick', el.tick.checked));
 
 	el.toggle.addEventListener('click', () => {
 		unlock();
@@ -383,7 +401,7 @@ async function init() {
 			showStatus(`${err.message}。前回の定義で動作しています`, true);
 			return registerWorker();
 		}
-		el.title.textContent = '定義を読み込めません';
+		el.title.textContent = 'Failed to load';
 		el.name.textContent = err.message;
 		el.toggle.disabled = true;
 		el.reset.disabled = true;

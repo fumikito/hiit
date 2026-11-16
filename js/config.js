@@ -83,11 +83,11 @@ export function parseWorkouts(source) {
 export function buildPhases(w) {
 	const phases = [];
 	if (w.countdown > 0) {
-		phases.push({ type: 'prepare', label: '準備', name: 'まもなく開始', duration: w.countdown });
+		phases.push({ type: 'prepare', label: 'Get Ready', name: 'Starting soon', duration: w.countdown });
 	}
 	for (let r = 0; r < w.rounds; r++) {
 		w.sets.forEach((set, i) => {
-			phases.push({ type: 'work', label: '運動', name: set.name, duration: set.work, set: i, round: r });
+			phases.push({ type: 'work', label: 'Work', name: set.name, duration: set.work, set: i, round: r });
 			const lastOfRound = i === w.sets.length - 1;
 			if (lastOfRound && r === w.rounds - 1) {
 				return;
@@ -96,8 +96,8 @@ export function buildPhases(w) {
 			if (duration > 0) {
 				phases.push({
 					type: 'rest',
-					label: lastOfRound ? 'ラウンド休憩' : 'インターバル',
-					name: '休憩',
+					label: lastOfRound ? 'Round Rest' : 'Interval',
+					name: 'Rest',
 					duration,
 					set: i,
 					round: r,
