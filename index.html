@@ -13,32 +13,32 @@
 	<link rel="manifest" href="manifest.json">
 	<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 	<link rel="apple-touch-icon" href="icons/icon-180.png">
-	<link rel="stylesheet" href="style.css?v=039ba0a2">
+	<link rel="stylesheet" href="style.css?v=32671564">
 	<!-- ?v= とインポートマップは bin/stamp.mjs が生成する -->
 	<script type="importmap">
 	{
 		"imports": {
-			"./js/app.js": "./js/app.js?v=efe13882",
-			"./js/config.js": "./js/config.js?v=0a6cd038",
+			"./js/app.js": "./js/app.js?v=1db1f54e",
+			"./js/config.js": "./js/config.js?v=46cdfb63",
 			"./js/editor.js": "./js/editor.js?v=3b6d2f38",
 			"./js/library.js": "./js/library.js?v=3ed8f56c",
-			"./js/sound.js": "./js/sound.js?v=a1d6cbb5",
+			"./js/sound.js": "./js/sound.js?v=93b94502",
 			"./js/source.js": "./js/source.js?v=bb3ac8e8",
 			"./js/store.js": "./js/store.js?v=7905432d",
-			"./js/timer.js": "./js/timer.js?v=ccfd0433",
+			"./js/timer.js": "./js/timer.js?v=19b9e739",
 			"./js/wakelock.js": "./js/wakelock.js?v=9be72e49"
 		}
 	}
 	</script>
-	<script type="module" src="js/app.js?v=efe13882"></script>
+	<script type="module" src="js/app.js?v=1db1f54e"></script>
 </head>
 <body data-state="idle">
 	<header class="bar">
 		<label class="picker">
-			<span id="workout-title" class="picker-title">読み込み中…</span>
-			<select id="workout-select" aria-label="ワークアウトを選択"></select>
+			<span id="workout-title" class="picker-title">Loading…</span>
+			<select id="workout-select" aria-label="Workout"></select>
 		</label>
-		<button id="open-settings" class="icon-btn" type="button" aria-label="設定">
+		<button id="open-settings" class="icon-btn" type="button" aria-label="Settings">
 			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
 		</button>
 	</header>
@@ -46,7 +46,7 @@
 	<p id="notice" class="notice" role="alert" hidden></p>
 
 	<main class="stage">
-		<p id="phase-label" class="phase-label">スタート待ち</p>
+		<p id="phase-label" class="phase-label">Ready</p>
 		<p id="counter" class="counter"></p>
 		<h1 id="phase-name" class="phase-name"></h1>
 		<div id="time" class="time" role="timer" aria-live="off">0</div>
@@ -61,8 +61,13 @@
 		</div>
 		<div class="total-meta"><span id="elapsed"></span><span id="left"></span></div>
 		<div class="controls">
-			<button id="reset" class="btn btn-sub" type="button" disabled>リセット</button>
-			<button id="toggle" class="btn btn-main" type="button" disabled>スタート</button>
+			<button id="reset" class="btn btn-sub" type="button" aria-label="Reset" disabled>
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg>
+			</button>
+			<button id="toggle" class="btn btn-main" type="button" aria-label="Start" disabled>
+				<svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg>
+				<svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><rect fill="currentColor" x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect fill="currentColor" x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>
+			</button>
 		</div>
 	</footer>
 
@@ -71,6 +76,7 @@
 			<h2>設定</h2>
 			<div class="opts">
 				<label><input id="opt-sound" type="checkbox"> ビープ音</label>
+				<label><input id="opt-tick" type="checkbox"> 1秒ごとのティック音</label>
 				<label><input id="opt-voice" type="checkbox"> 種目名の読み上げ</label>
 			</div>
 			<section class="wk">

@@ -197,7 +197,10 @@ body[data-paused="1"] .time { opacity: 0.55; animation: blink 1.2s steps(2) infi
 	font-weight: 700;
 	cursor: pointer;
 }
-.controls .btn { min-height: 64px; padding: 0 8px; font-size: 20px; white-space: nowrap; }
+.controls .btn { display: grid; place-items: center; min-height: 64px; padding: 0 8px; }
+.controls .btn svg { width: 30px; height: 30px; }
+.btn-main .ic-pause, .btn-main.is-pause .ic-play { display: none; }
+.btn-main.is-pause .ic-pause { display: block; }
 .btn-main { background: var(--fg); color: #18181b; }
 .btn-main.is-pause { background: rgb(0 0 0 / 0.3); color: var(--fg); }
 .btn-sub { background: rgb(0 0 0 / 0.22); color: var(--fg); }
